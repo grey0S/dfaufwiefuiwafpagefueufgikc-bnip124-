@@ -2,6 +2,8 @@
 import React, { useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { Hexagon, Disc3, ShieldAlert } from "lucide-react";
+import styles from "./LoginModal.module.css";
 
 async function hashString(message: string) {
   const msgUint8 = new TextEncoder().encode(message);
@@ -61,59 +63,104 @@ export default function LoginModal() {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm">
-      <form onSubmit={handleSubmit} className="bg-[var(--bg-secondary)] border border-[var(--border-neon)] p-8 rounded-xl max-w-sm w-full text-center shadow-[0_0_30px_rgba(0,255,204,0.15)] flex flex-col gap-4">
-        <div>
-          <h2 className="text-3xl font-black mb-2 text-[var(--accent-neon)] tracking-tight">sec-ondary</h2>
-          <p className="text-[var(--text-secondary)] text-sm">
-            {isLogin ? "Welcome back, adventurer." : "Register to start your quests."}
-          </p>
+    <div className={styles.overlay}>
+      <div className={styles.container}>
+        
+        {/* Left Column: Copy & Form */}
+        <div className={styles.leftColumn}>
+          <div className={styles.brand}>
+            <Hexagon className={styles.brandIcon} size={28} strokeWidth={2.5} />
+            <span>SEC-ONDARY</span>
+          </div>
+
+          <h1 className={styles.headline}>
+            Generate your reality. <br/>
+            Complete a <span className={styles.headlineAccent}>mission</span>
+          </h1>
+
+          <div className={styles.statsRow}>
+            <div className={styles.statBox}>
+              <div className={styles.statNumber}>10K+</div>
+              <div className={styles.statLabel}>Active Agents</div>
+            </div>
+            <div className={styles.statBox}>
+              <div className={styles.statNumber}>50K+</div>
+              <div className={styles.statLabel}>Quests Solved</div>
+            </div>
+          </div>
+
+          <div className={styles.formContainer}>
+            <form onSubmit={handleSubmit} className={styles.inputGroup}>
+              {errorMsg && (
+                <div className={styles.error}>
+                  <ShieldAlert size={18} style={{ display: 'inline', marginRight: '8px', verticalAlign: 'middle' }}/>
+                  {errorMsg}
+                </div>
+              )}
+
+              <input 
+                type="email" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email address" 
+                className={styles.input}
+                required
+              />
+
+              <input 
+                type="password" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password" 
+                className={styles.input}
+                required
+              />
+
+              {!isLogin && (
+                <input 
+                  type="text" 
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Agent Codename (Username)" 
+                  className={styles.input}
+                  required
+                />
+              )}
+
+              <button 
+                type="submit"
+                disabled={submitting}
+                className={styles.button}
+              >
+                {submitting ? "Processing..." : isLogin ? "Access Dashboard" : "Initialize Profile"}
+              </button>
+            </form>
+
+            <button 
+              type="button"
+              onClick={() => { setIsLogin(!isLogin); setErrorMsg(""); }}
+              className={styles.toggleText}
+            >
+              {isLogin ? "Don't have an account? Sign Up" : "Already have an account? Log In"}
+            </button>
+          </div>
         </div>
 
-        {errorMsg && <p className="text-red-500 font-bold text-xs">{errorMsg}</p>}
+        {/* Right Column: Visual Mockup */}
+        <div className={styles.rightColumn}>
+          <div className={styles.phoneMockup}>
+            <div className={styles.phoneNotch}></div>
+            <div className={styles.phoneScreen}>
+              <Disc3 size={120} color="#4a90e2" opacity={0.8} style={{ animation: "spin 10s linear infinite" }}/>
+              <div className={styles.scannerBeam}></div>
+              <h3 style={{ marginTop: '2rem', fontSize: '1.2rem', fontWeight: 600, color: '#fff', textAlign: 'center' }}>
+                Analyzing<br/>Environment...
+              </h3>
+            </div>
+          </div>
+        </div>
 
-        <input 
-          type="email" 
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Email address" 
-          className="w-full bg-[var(--bg-tertiary)] border border-[var(--bg-tertiary)] rounded-lg p-3 text-white focus:outline-none focus:border-[var(--accent-neon)] transition-colors text-center"
-        />
-
-        <input 
-          type="password" 
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Password" 
-          className="w-full bg-[var(--bg-tertiary)] border border-[var(--bg-tertiary)] rounded-lg p-3 text-white focus:outline-none focus:border-[var(--accent-neon)] transition-colors text-center"
-        />
-
-        {!isLogin && (
-          <input 
-            type="text" 
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="Unique Username" 
-            className="w-full bg-[var(--bg-tertiary)] border border-[var(--bg-tertiary)] rounded-lg p-3 text-white focus:outline-none focus:border-[var(--accent-neon)] transition-colors text-center"
-          />
-        )}
-
-        <button 
-          type="submit"
-          disabled={submitting}
-          className="w-full bg-[var(--accent-neon)] text-black font-extrabold py-3 rounded-lg hover:shadow-[0_0_15px_var(--accent-neon)] transition-all disabled:opacity-50 uppercase tracking-widest text-sm mt-2"
-        >
-          {submitting ? "Authenticating..." : isLogin ? "Enter" : "Create Profile"}
-        </button>
-
-        <button 
-          type="button"
-          onClick={() => { setIsLogin(!isLogin); setErrorMsg(""); }}
-          className="text-xs text-[var(--text-secondary)] hover:text-white transition-colors"
-        >
-          {isLogin ? "Don't have an account? Sign Up" : "Already have an account? Log In"}
-        </button>
-      </form>
+      </div>
     </div>
   );
 }
