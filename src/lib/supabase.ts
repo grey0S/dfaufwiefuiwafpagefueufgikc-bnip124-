@@ -10,6 +10,8 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js'
 //   2. Fall back to a structurally-valid placeholder URL + key so the SDK can
 //      be constructed without error.
 //   3. Expose `isSupabaseConfigured` so runtime code can guard calls.
+//
+// NOTE: Supabase now uses `sb_publishable_*` keys in addition to legacy JWTs.
 // ---------------------------------------------------------------------------
 
 const PLACEHOLDER_URL = 'https://placeholder.supabase.co'
@@ -31,9 +33,9 @@ function resolveUrl(): string {
 }
 
 function resolveKey(): string {
+  // Support both the new publishable key format (sb_publishable_*) and legacy JWTs (eyJ*)
   const raw = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
-  // The anon key must be a JWT (starts with "eyJ"); reject anything else.
-  if (raw && raw.startsWith('eyJ')) return raw
+  if (raw && (raw.startsWith('eyJ') || raw.startsWith('sb_'))) return raw
   return PLACEHOLDER_KEY
 }
 
