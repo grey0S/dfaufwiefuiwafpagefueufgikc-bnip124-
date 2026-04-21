@@ -1,6 +1,6 @@
 "use client";
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { supabase } from "@/lib/supabase";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 
 export type Profile = {
   id: string;
@@ -33,14 +33,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Guard: if Supabase is not configured (build-time / missing env),
+    // just stop loading immediately – don't call the SDK.
+    if (!isSupabaseConfigured) {
+      setLoading(false);
+      return;
+    }
+
     let mounted = true;
 
     async function fetchProfile(userId: string) {
-      const { data, error } = await supabase.from("profiles").select("*").eq("user_id", userId).single();
+      const { data } = await supabase.from("profiles").select("*").eq("user_id", userId).single();
       if (data && mounted) {
         setProfile(data);
       }
-      setLoading(false);
+      if (mounted) setLoading(false);
     }
 
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -56,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         fetchProfile(session.user.id);
       } else {
         setProfile(null);
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     });
 

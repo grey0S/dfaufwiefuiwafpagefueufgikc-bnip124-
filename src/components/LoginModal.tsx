@@ -1,16 +1,10 @@
 "use client";
 import React, { useState } from "react";
 import { useAuth } from "@/lib/auth";
-import { supabase } from "@/lib/supabase";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { sha256 } from "@/lib/crypto";
 import { Hexagon, Disc3, ShieldAlert } from "lucide-react";
 import styles from "./LoginModal.module.css";
-
-async function hashString(message: string) {
-  const msgUint8 = new TextEncoder().encode(message);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
-}
 
 export default function LoginModal() {
   const { profile, loading } = useAuth();
@@ -39,7 +33,7 @@ export default function LoginModal() {
         if (data.user) {
           const code = Math.floor(100000 + Math.random() * 900000).toString();
           const rawSecurityCode = crypto.randomUUID().split('-')[0];
-          const securityCodeHash = await hashString(rawSecurityCode);
+          const securityCodeHash = await sha256(rawSecurityCode);
 
           const { error: profileErr } = await supabase.from("profiles").insert({
             user_id: data.user.id,

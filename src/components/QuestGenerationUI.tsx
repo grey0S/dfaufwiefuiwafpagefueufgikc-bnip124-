@@ -3,7 +3,8 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Users, Bomb, MapPin } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { supabase } from "@/lib/supabase";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { secureSet, secureGet } from "@/lib/crypto";
 import { generateLocalQuest } from "@/lib/ai-generator";
 
 export default function QuestGenerationUI({ onQuestCreated }: { onQuestCreated: (quest: any) => void }) {
@@ -17,8 +18,13 @@ export default function QuestGenerationUI({ onQuestCreated }: { onQuestCreated: 
   const generateQuest = async () => {
     if (!context.trim() || !profile) return;
 
-    // Rate Limiting checks
-    const lastTime = localStorage.getItem('sec_last_quest_time');
+    if (!isSupabaseConfigured) {
+      alert('Supabase is not configured. Cannot create quests.');
+      return;
+    }
+
+    // Rate Limiting checks (encrypted to prevent tampering)
+    const lastTime = await secureGet('sec_last_quest_time');
     if (lastTime) {
       const waitTime = Date.now() - parseInt(lastTime, 10);
       if (waitTime < 30000) { // 30 seconds wait
@@ -52,7 +58,7 @@ export default function QuestGenerationUI({ onQuestCreated }: { onQuestCreated: 
 
       if (partErr) throw partErr;
 
-      localStorage.setItem('sec_last_quest_time', Date.now().toString());
+      await secureSet('sec_last_quest_time', Date.now().toString());
 
       onQuestCreated(questD);
       setIsOpen(false);

@@ -1,13 +1,47 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
-// Use a structurally valid fallback URL so the SDK doesn't throw during
-// Next.js static prerendering (where env vars may be absent).
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder'
+// ---------------------------------------------------------------------------
+// Safely resolve Supabase credentials.
+//
+// During Next.js static prerendering (SSG / ISR) the NEXT_PUBLIC_* env vars
+// may be absent or empty.  The Supabase SDK throws immediately if the URL is
+// not a valid HTTP(S) link, which kills the build.  We therefore:
+//   1. Validate the URL with a try/catch around `new URL()`.
+//   2. Fall back to a structurally-valid placeholder URL + key so the SDK can
+//      be constructed without error.
+//   3. Expose `isSupabaseConfigured` so runtime code can guard calls.
+// ---------------------------------------------------------------------------
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+const PLACEHOLDER_URL = 'https://placeholder.supabase.co'
+const PLACEHOLDER_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsYWNlaG9sZGVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE2MDAwMDAwMDAsImV4cCI6MTkwMDAwMDAwMH0.placeholder'
 
-/** True when real Supabase credentials are configured */
-export const isSupabaseConfigured =
-  !!process.env.NEXT_PUBLIC_SUPABASE_URL &&
-  !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+function resolveUrl(): string {
+  const raw = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
+  if (!raw) return PLACEHOLDER_URL
+  try {
+    const parsed = new URL(raw)
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      return raw
+    }
+  } catch {
+    // malformed URL – fall through
+  }
+  return PLACEHOLDER_URL
+}
+
+function resolveKey(): string {
+  const raw = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
+  // The anon key must be a JWT (starts with "eyJ"); reject anything else.
+  if (raw && raw.startsWith('eyJ')) return raw
+  return PLACEHOLDER_KEY
+}
+
+const supabaseUrl = resolveUrl()
+const supabaseAnonKey = resolveKey()
+
+export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey)
+
+/** True when real, validated Supabase credentials are configured */
+export const isSupabaseConfigured: boolean =
+  supabaseUrl !== PLACEHOLDER_URL && supabaseAnonKey !== PLACEHOLDER_KEY
